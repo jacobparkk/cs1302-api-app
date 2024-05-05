@@ -22,21 +22,28 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import javafx.scene.web.WebView;
+import javafx.scene.web.WebEngine;
 
 /**
- * REPLACE WITH NON-SHOUTING DESCRIPTION OF YOUR APP.
+ * ApiApp prompts user to select a top 5 league in football and to input a year
+ * and the app returns the team that won that league that year, then provides the user
+ * with the wikipedia page of the team that won.
  */
 public class ApiApp extends Application {
-    private static final String SCOREBAT_API_TOKEN =
-        "MTU2MTg5XzE3MTQ3Njc3MzVfNTE4OTY5ZDRlNjljODY2ZDJjMzI2MzkyNjc5ZTVkZDdjZTBhM2JmNQ==";
-    private static final String SCOREBAT_API_URL_FORMAT =
-        "https://www.scorebat.com/video-api/v3/team/%s/?token=%s";
     private static final String API_FOOTBALL_URL_FORMAT =
-        "https://api-football-standings.azharimm.site/leagues/";
-
-    private final Gson gson = new Gson();
+        "https://api-football-standings.azharimm.dev/leagues/%s/standings?season=%s&sort=asc";
+    private static final String WIKIPEDIA_API_URL =
+        "https://en.wikipedia.org/w/rest.php/v1/search/page";
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
+
+    private static final Gson GSON = new Gson();
+
+    private final String[] leagueNames =
+    {"Premier League", "Ligue 1", "Serie A", "Bundesliga", "La Liga"};
+    private final String[] leagueCodes = {"eng.1", "fra.1", "ita.1", "ger.1", "esp.1"};
 
     Stage stage;
     Scene scene;
@@ -55,29 +62,43 @@ public class ApiApp extends Application {
     @Override
     public void start(Stage stage) {
 
-        stage.setTitle("Top Team Highlight Finder");
+        stage.setTitle("Top Team Wiki Finder");
 
         Label leagueLabel = new Label("Select a Top 5 league");
         ComboBox<String> dropDown = new ComboBox<>();
-        dropDown.setValue(" ");
-        dropDown.getItems().addAll(
-            "Premier League (England)", "Ligue 1 (France)",
-            "Serie A (Italy)", "Bundesliga (Germany)", "La Liga (Spain)");
+        for (String league : leagueNames) {
+            dropDown.getItems().add(league);
+        }
+        // provides layout
         Label yearLabel = new Label("Enter Year");
         TextField yearField = new TextField();
         Button searchButton = new Button("Search");
         Label resultLabel = new Label();
+        Label resultLabel2 = new Label();
+        Label resultLabel3 = new Label();
+        WebView webView = new WebView();
+        WebEngine webEngine = webView.getEngine();
 
         searchButton.setOnAction(e -> {
+            // all if statements determine if there is content stored in the variables
             String year = URLEncoder.encode(yearField.getText(), StandardCharsets.UTF_8);
             String league = dropDown.getValue();
-            if (league != " ") {
+            if (!year.isEmpty() && league != null) {
                 String leagueCode = getLeagueCode(league);
-                if (!year.isEmpty() && leagueCode != null) {
-                    String topTeam = getTopTeam(year, league);
+                if (leagueCode != null) {
+                    String topTeam = getTopTeam(year, leagueCode);
                     if (topTeam != null) {
-                        String highlightUrl = getHighlightUrl(topTeam);
-                        resultLabel.setText("Top Team Highlight: " + highlightUrl);
+                        resultLabel.setText(topTeam + " won the " +
+                        league + " in the season that started in " + year + ".");
+
+                        String teamWiki = searchTopTeam(topTeam);
+                        if (teamWiki != null) {
+                            resultLabel2.setText("Wiki URL for " + topTeam + ":" + teamWiki);
+                            System.out.println(teamWiki);
+                            webView.getEngine().load(teamWiki);
+                        } else {
+                            resultLabel2.setText("Failed to load wiki for the top team.");
+                        }
                     } else {
                         resultLabel.setText("No top team found for the given year and league.");
                     }
@@ -88,126 +109,150 @@ public class ApiApp extends Application {
         });
         VBox layout = new VBox(10);
         layout.getChildren().addAll
-            (leagueLabel, dropDown, yearLabel, yearField, searchButton, resultLabel);
-        Scene scene = new Scene(layout, 500, 500);
+            (leagueLabel, dropDown, yearLabel, yearField,
+            searchButton, resultLabel, resultLabel2, webView);
+        Scene scene = new Scene(layout, 800, 600);
         stage.setScene(scene);
         stage.show();
     }
 
-    private String getLeagueCode(String league) {
-        if (league  == "Premier League (English)") {
-            return "eng.1";
-        }
-        if (league  == "Ligue 1 (France)") {
-            return "fra.1";
-        }
-        if (league == "Serie A (Italy)") {
-            return "ita.1";
-        }
-        if (league == "Bundesliga (Germany)") {
-            return "ger.1";
-        }
-        if (league == "La Liga (Spain)") {
-            return "spa.1";
+    /**
+     * Retrieves the league code corresponding to the league name.
+     *
+     * @return returns the league code that corresponds to the league name.
+     * @param leagueName  name of the league
+     */
+    private String getLeagueCode(String leagueName) {
+        for (int i = 0; i < leagueNames.length; i++) {
+            if (leagueNames[i].equals(leagueName)) {
+                return leagueCodes[i];
+            }
         }
         return null;
     }
+
     /**
      * Retrieves the team that won the league that year.
      *
      * @return returns the top team of the league that year.
-     * @param league  the league the user wants to know the winner of.
+     * @param leagueCode  the league the user wants to know the winner of.
      * @param year  the year the user wants to know the winner of in the league.
      */
-    private String getTopTeam(String league, String year) {
+    private String getTopTeam(String year, String leagueCode) {
         try {
+            // building url
+            String url = String.format(API_FOOTBALL_URL_FORMAT, leagueCode, year);
+
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(String.format
-                ("league/standings?season=year&sort=asc", league, Integer.parseInt(year))))
+                .uri(URI.create(url))
                 .build();
 
-            HttpResponse<String> response = httpClient.send
-                (request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
 
+            // ensures status is well
             if (response.statusCode() == 200) {
-                FootballStandings standings = new Gson().fromJson
-                    (response.body(), FootballStandings.class);
-                if (standings != null && standings.getStandings() != null
-                && !standings.getStandings().isEmpty()) {
-                    return standings.getStandings().get(0).getTeamName();
+                String responseBody = response.body();
+                System.out.println(url);
+                ApiResponse apiResponse = GSON.fromJson(response.body(), ApiResponse.class);
+                if (apiResponse.data != null && apiResponse.data.standings != null
+                && apiResponse.data.standings.length > 0) {
+                    return apiResponse.data.standings[0].team.name;
+                } else {
+                    System.out.println("Standings array is empty.");
                 }
+            } else {
+                System.out.println("Standings array is empty for the specified league and season.");
+                return null;
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    private String getHighlightUrl(String teamName) {
+    /**
+     * Constructs wiki url for the top team.
+     *
+     * @return returns  wiki url for top team.
+     * @param topTeamName  name of the top team
+     */
+    public String searchTopTeam(String topTeamName) {
         try {
+            // correctly formats and builds url
+            String formattedTeamName = topTeamName.toLowerCase().replace(" ", "+");
+            String url = String.format
+                ("%s?q=%s&limit=1", WIKIPEDIA_API_URL, URLEncoder.encode
+                (topTeamName, StandardCharsets.UTF_8));
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(String.format(SCOREBAT_API_URL_FORMAT, teamName, SCOREBAT_API_TOKEN)))
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
+                .uri(URI.create(url))
+                .build();
+            HttpResponse<String> response =
+                httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            // ensures status is well
+            // if statements describe what is going wrong in command prompt
             if (response.statusCode() == 200) {
-                ScorebatTeam scorebatTeam = new Gson().fromJson(response.body(), ScorebatTeam.class);
-                if (scorebatTeam != null && scorebatTeam.getVideos() != null && !scorebatTeam.getVideos().isEmpty()) {
-                    return scorebatTeam.getVideos().get(0).getTitle();
+                WikipediaSearchResponse searchResponse =
+                    GSON.fromJson(response.body(), WikipediaSearchResponse.class);
+                if (searchResponse.pages != null && searchResponse.pages.length > 0) {
+                    return "https://en.wikipedia.org/wiki/" +
+                        URLEncoder.encode(searchResponse.pages[0].key, StandardCharsets.UTF_8);
+                } else {
+                    System.out.println("No Wikipedia page found for the specified team.");
                 }
+            } else {
+                System.out.println
+                    ("Failed to fetch data from Wikipedia API. Status code: " +
+                    response.statusCode());
             }
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    static class FootballStandings {
-        private java.util.List<TeamStanding> standings;
+    // all these private static classes allow to parse through json using gson
 
-        public java.util.List<TeamStanding> getStandings() {
-            return standings;
-        }
-
-        public void setStandings(java.util.List<TeamStanding> standings) {
-            this.standings = standings;
-        }
+    /**
+     * Represents team's name.
+     */
+    private static class Team {
+        public String name;
     }
 
-    static class TeamStanding {
-        private String teamName;
-
-        public String getTeamName() {
-            return teamName;
-        }
-
-        public void setTeamName(String teamName) {
-            this.teamName = teamName;
-        }
+    /**
+     * Represents team's standing.
+     */
+    private static class Standing {
+        public Team team;
     }
 
-    static class ScorebatTeam {
-        private java.util.List<Video> videos;
-
-        public java.util.List<Video> getVideos() {
-            return videos;
-        }
-
-        public void setVideos(java.util.List<Video> videos) {
-            this.videos = videos;
-        }
+    /**
+     * Represents team's standings data.
+     */
+    private static class Data {
+        public Standing[] standings;
     }
 
-    static class Video {
-        private String title;
+    /**
+     * Represents api response data.
+     */
+    private static class ApiResponse {
+        public Data data;
+    }
 
-        public String getTitle() {
-            return title;
-        }
+    /**
+     * Represents wikipedia search response.
+     */
+    private static class WikipediaSearchResponse {
+        private WikipediaPage[] pages;
+    }
 
-        public void setTitle(String title) {
-            this.title = title;
-        }
+    /**
+     * Represents the key of the wikipedia page
+     * according to the format and top team.
+     */
+    private static class WikipediaPage {
+        private String key;
     }
 } // ApiApp
