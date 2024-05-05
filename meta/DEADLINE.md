@@ -14,7 +14,13 @@ Markdown is transformed into nice-looking HTML.
 
 > **Also, include the GitHub `https` URL to your repository.**
 
-TODO WRITE / REPLACE
+My ApiApp, Top Team Wiki Finder, is designed for the user to select a top 5
+football (soccer) league from the dropdown menu and then input any valid year
+that the league was played. Then, the app would display who was the winning team
+of that league that year (the year inputted is the year the season started
+EX: 2020 -> 2020-2021). Finally, the team that won the league that year would
+then be used in a Wikipedia search and using webView, a Wikipedia info page of
+that team would be displayed.
 
 ## Part 1.2: APIs
 
@@ -26,9 +32,8 @@ TODO WRITE / REPLACE
 > JSON APIs, then include them with similar formatting.
 
 ### API 1
-
 ```
-https://.../replace/me
+https://api-football-standings.azharimm.site/leagues/eng.1/standings?season=2020&sort=asc
 ```
 
 > Replace this line with notes (if needed) or remove it (if not needed).
@@ -36,7 +41,7 @@ https://.../replace/me
 ### API 2
 
 ```
-https://../replace/me
+https://en.wikipedia.org/w/rest.php/v1/search/page?q=Chelsea+F.C.&limit=1"
 ```
 
 > Replace this line with notes (if needed) or remove it (if not needed).
@@ -46,11 +51,17 @@ https://../replace/me
 > What is something new and/or exciting that you learned from working
 > on this project?
 
-TODO WRITE / REPLACE
+I learned everything about webView. It was similar to imageView, so it was not a totally new
+thing, however, webView allows websites and other file types to be displayed. This made me feel
+like I was becoming a real-life coder as I was able to obtain things from the internet and code
+it all myself.
 
 ## Part 3: Retrospect
 
 > If you could start the project over from scratch, what do
 > you think might do differently and why?
 
-TODO WRITE / REPLACE
+I attempted to use the GIPHY api to print a gif of the top team instead of the wiki page, however,
+I was unable to figure out how to display a gif through webView because there was an error. So if I
+were to restart the project over, I would do more research about the APIs and see if they are compatible
+with what I want to accomplish.
