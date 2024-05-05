@@ -93,7 +93,7 @@ public class ApiApp extends Application {
 
                         String teamWiki = searchTopTeam(topTeam);
                         if (teamWiki != null) {
-                            resultLabel2.setText("Wiki URL for " + topTeam + ":" + teamWiki);
+                            resultLabel2.setText("Wiki URL for " + topTeam + ": " + teamWiki);
                             System.out.println(teamWiki);
                             webView.getEngine().load(teamWiki);
                         } else {
