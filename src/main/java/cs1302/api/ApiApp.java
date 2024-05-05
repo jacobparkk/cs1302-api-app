@@ -89,7 +89,7 @@ public class ApiApp extends Application {
                     String topTeam = getTopTeam(year, leagueCode);
                     if (topTeam != null) {
                         resultLabel.setText(topTeam + " won the " +
-                        league + " in the season that started in " + year + ".");
+                            league + " in the season that started in " + year + ".");
 
                         String teamWiki = searchTopTeam(topTeam);
                         if (teamWiki != null) {
@@ -110,7 +110,7 @@ public class ApiApp extends Application {
         VBox layout = new VBox(10);
         layout.getChildren().addAll
             (leagueLabel, dropDown, yearLabel, yearField,
-            searchButton, resultLabel, resultLabel2, webView);
+                searchButton, resultLabel, resultLabel2, webView);
         Scene scene = new Scene(layout, 800, 600);
         stage.setScene(scene);
         stage.show();
@@ -155,7 +155,7 @@ public class ApiApp extends Application {
                 System.out.println(url);
                 ApiResponse apiResponse = GSON.fromJson(response.body(), ApiResponse.class);
                 if (apiResponse.data != null && apiResponse.data.standings != null
-                && apiResponse.data.standings.length > 0) {
+                    && apiResponse.data.standings.length > 0) {
                     return apiResponse.data.standings[0].team.name;
                 } else {
                     System.out.println("Standings array is empty.");
@@ -201,8 +201,7 @@ public class ApiApp extends Application {
                     System.out.println("No Wikipedia page found for the specified team.");
                 }
             } else {
-                System.out.println
-                    ("Failed to fetch data from Wikipedia API. Status code: " +
+                System.out.println("Failed to fetch data from Wikipedia API. Status code: " +
                     response.statusCode());
             }
         } catch (IOException | InterruptedException e) {
