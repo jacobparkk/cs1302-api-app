@@ -21,6 +21,7 @@ of that league that year (the year inputted is the year the season started
 EX: 2020 -> 2020-2021). Finally, the team that won the league that year would
 then be used in a Wikipedia search and using webView, a Wikipedia info page of
 that team would be displayed.
+https://github.com/jacobparkk/cs1302-api-app
 
 ## Part 1.2: APIs
 
